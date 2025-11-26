@@ -1,0 +1,54 @@
+{
+  "name": "CODROB_ARMBOT",
+  "version": "1.0.0",
+  "description": "CODLAI - ARMBOT Library for controlling robotic arm movements. Visit www.codlai.com for more information. / CODLAI - ARMBOT Kütüphanesi, robotik kol hareketlerini kontrol etmek için geliştirilmiştir. Daha fazla bilgi için www.codlai.com adresini ziyaret edin.",
+  "keywords": [
+    "robotics",
+    "arm",
+    "servo",
+    "control",
+    "CODLAI",
+    "ARMBOT"
+  ],
+  "authors": [
+    {
+      "name": "Samed Kaya",
+      "email": "info@codlai.com",
+      "url": "https://codlai.com",
+      "maintainer": true
+    }
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/CODLAI-Technologies-INC/CODROB_ARMBOT"
+  },
+  "export": {
+    "include": [
+      "examples/*",
+      "ARMBOT.h",
+      "README.md",
+      "keywords.txt",
+      "library.properties",
+      "LICENSE",
+      "CHANGELOG.md"
+    ]
+  },
+  "license": "MIT",
+  "frameworks": [
+    "arduino"
+  ],
+  "platforms": [
+    "espressif8266",
+    "espressif32"
+  ],
+  "examples": [
+    "examples/ARMBOT_basic_example",
+    "examples/IOTBOT_Armbot_and_Carbot_Wired_Control",
+    "examples/IOTBOT_Armbot_and_Carbot_Wireless_Control",
+    "examples/IOTBOT_ARMBOT_Basic_Example",
+    "examples/MINIBOT_ARMBOT_ESP_NOW_Slave_Control",
+    "examples/MINIBOT_ARMBOT_Store_Demo_Mode"
+  ],
+  "homepage": "https://github.com/CODLAI-Technologies-INC/CODROB_ARMBOT",
+  "dependencies": {}
+}
