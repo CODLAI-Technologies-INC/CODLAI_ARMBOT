@@ -1,5 +1,5 @@
 {
-  "name": "CODROB_ARMBOT",
+  "name": "CODLAI_ARMBOT",
   "version": "1.0.0",
   "description": "CODLAI - ARMBOT Library for controlling robotic arm movements. Visit www.codlai.com for more information. / CODLAI - ARMBOT Kütüphanesi, robotik kol hareketlerini kontrol etmek için geliştirilmiştir. Daha fazla bilgi için www.codlai.com adresini ziyaret edin.",
   "keywords": [
@@ -20,7 +20,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/CODLAI-Technologies-INC/CODROB_ARMBOT"
+    "url": "https://github.com/CODLAI-Technologies-INC/CODLAI_ARMBOT"
   },
   "export": {
     "include": [
@@ -49,6 +49,6 @@
     "examples/MINIBOT_ARMBOT_ESP_NOW_Slave_Control",
     "examples/MINIBOT_ARMBOT_Store_Demo_Mode"
   ],
-  "homepage": "https://github.com/CODLAI-Technologies-INC/CODROB_ARMBOT",
+  "homepage": "https://github.com/CODLAI-Technologies-INC/CODLAI_ARMBOT",
   "dependencies": {}
 }
