@@ -14,7 +14,6 @@
  */
 
 #define USE_ESPNOW
-#define USE_WIFI
 #include <IOTBOT.h>
 #include <esp_wifi.h> // For channel setting
 

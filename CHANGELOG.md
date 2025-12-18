@@ -2,6 +2,11 @@
 
 # CODLAI ERA (New Models)
 
+## [1.0.4] - 2025-12-18
+### Updated
+- Revamped the `IOTBOT_Armbot_and_Carbot_Wireless_Control.ino` walkthrough to cover the latest helper APIs for carrier-enabled control flows.
+- Polished `MINIBOT_ARMBOT_ESP_NOW_Slave_Control.ino` so the ESP-NOW handshake steps match the refreshed IOTBOT/MINIBOT helpers.
+
 ## [1.0.3] - 2025-03-09
 ### Fixed
 - PlatformIO yeniden yayını için sürüm numarası artırıldı.

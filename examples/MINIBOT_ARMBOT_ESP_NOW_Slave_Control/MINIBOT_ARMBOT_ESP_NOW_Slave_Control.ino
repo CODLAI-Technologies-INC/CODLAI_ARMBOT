@@ -6,7 +6,6 @@
  */
 
 #define USE_ESPNOW
-#define USE_WIFI
 #define USE_SERVO
 #include <MINIBOT.h>
 #include <ARMBOT.h>
