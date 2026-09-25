@@ -33,11 +33,15 @@ public:
   void axis2Motion(int angle, int speed);       // Move Axis 2 / Eksen 2'yi hareket ettir
   void axis3Motion(int angle, int speed);       // Move Axis 3 / Eksen 3'ü hareket ettir
   void gripperMotion(int angle, int speed);     // Move Gripper / Gripper'ı hareket ettir
+  void fourServoTestPose(bool highPose, int speed); // Test pose for all 4 servos / 4 servo test pozu
+  void calibrationPose(int speed);               // Move to calibration pose / Kalibrasyon pozuna git
+  void storeModeStep(uint8_t step, int speed);   // Execute one store mode step / Store mod adımı çalıştır
   void waveHand(int count = 3);                 // Wave hand / El salla
   void buzzerPlay(int frequency, int duration); // Play a tone / Ses çıkar
   void buzzerStart(int frequency);              // Start playing tone / Sesi başlat
   void buzzerStop();                            // Stop playing tone / Sesi durdur
   void istiklalMarsiCal();                      // Play the National Anthem melody / İstiklal Marşı'nı çal
+  void abortMotion();                           // Immediately interrupt ongoing movement / Devam eden hareketi iptal et
 
   /*********************************** Serial Port ***********************************
    */
@@ -55,12 +59,14 @@ private:
   // Servo objects for the axes and gripper / Servo motor nesneleri
   Servo _axis1Servo, _axis2Servo, _axis3Servo, _gripperServo;
   int currentAngle = 0;
+  volatile bool _abortFlag = false;
 
   // Last position variables for each axis / Her eksen için son pozisyon değişkenleri
   int _axis1LastPos = 90;
   int _axis2LastPos = 90;
   int _axis3LastPos = 50;
   int _gripperLastPos = 60;
+  static const int _buzzerLedcChannel = 15;
 
   // Platform-specific pin assignments / Platforma özgü pin tanımlamaları
 #if defined(ESP32)
@@ -108,7 +114,12 @@ inline void ARMBOT::begin()
   auto attachServo = [](Servo &servo, int pin, const char *name)
   {
 #if defined(ESP32)
-    if (!servo.attach(pin, 500, 2500)) // **ESP32 için 1000-2000 µs kullan**
+    // ESP32Servo 3.x attach() basarida LEDC kanal numarasini dondurur (ilk
+    // servo icin 0); bu deger !servo.attach(...) ile "hata" gibi
+    // okunuyordu ve ilk eksen her zaman yanlislikla "attach failed"
+    // basiyordu. Donus degeri yerine attached() durumuna bakiyoruz.
+    servo.attach(pin, 500, 2500); // **ESP32 için 1000-2000 µs kullan**
+    if (!servo.attached())
 #elif defined(ESP8266)
     if (!servo.attach(pin, 500, 2500)) // **ESP8266 için PWM sinyal genişliği arttırıldı (500-2500 µs)**
 #else
@@ -122,6 +133,12 @@ inline void ARMBOT::begin()
   attachServo(_axis2Servo, _axis2Pin, "Axis 2");
   attachServo(_axis3Servo, _axis3Pin, "Axis 3");
   attachServo(_gripperServo, _gripperPin, "Gripper");
+
+#if defined(ESP32)
+  pinMode(_buzzerPin, OUTPUT);
+  ledcSetup(_buzzerLedcChannel, 2000, 8);
+  ledcAttachPin(_buzzerPin, _buzzerLedcChannel);
+#endif
 
   // **Servo motorlarını başlangıç pozisyonlarına ayarla / Set initial positions**
   _axis1Servo.write(_axis1LastPos);
@@ -137,6 +154,12 @@ inline void ARMBOT::end()
   _axis2Servo.detach();
   _axis3Servo.detach();
   _gripperServo.detach();
+}
+
+// Abort ongoing movement
+inline void ARMBOT::abortMotion()
+{
+  _abortFlag = true;
 }
 
 // Smooth movement to target angle / Hedef açıya yumuşak hareket
@@ -165,8 +188,11 @@ inline void ARMBOT::moveToAngle(int &currentAngle, int angle, int speed)
 
   int step = (angle > currentAngle) ? 1 : -1; // Hareket yönünü belirle
 
+  _abortFlag = false; // Reset flag before loop
   while (currentAngle != angle)
   {
+    if (_abortFlag) break; // Acil iptal kontrolü / Check abort flag
+
     currentAngle += step;
 
     if (&currentAngle == &_axis1LastPos)
@@ -195,6 +221,41 @@ inline void ARMBOT::axis2Motion(int angle, int speed) { moveToAngle(_axis2LastPo
 inline void ARMBOT::axis3Motion(int angle, int speed) { moveToAngle(_axis3LastPos, angle, speed); }
 inline void ARMBOT::gripperMotion(int angle, int speed) { moveToAngle(_gripperLastPos, angle, speed); }
 
+inline void ARMBOT::fourServoTestPose(bool highPose, int speed)
+{
+  int angle = highPose ? 180 : 0;
+  axis1Motion(angle, speed);
+  axis2Motion(angle, speed);
+  axis3Motion(angle, speed);
+  gripperMotion(angle, speed);
+}
+
+inline void ARMBOT::calibrationPose(int speed)
+{
+  axis1Motion(90, speed);
+  axis2Motion(90, speed);
+  axis3Motion(50, speed);
+  gripperMotion(60, speed);
+}
+
+inline void ARMBOT::storeModeStep(uint8_t step, int speed)
+{
+  switch (step % 4) {
+    case 0:
+      axis1Motion(40, speed);
+      break;
+    case 1:
+      axis2Motion(140, speed);
+      break;
+    case 2:
+      axis3Motion(120, speed);
+      break;
+    default:
+      gripperMotion(20, speed);
+      break;
+  }
+}
+
 // Wave hand / El salla
 inline void ARMBOT::waveHand(int count)
 {
@@ -222,18 +283,33 @@ inline void ARMBOT::waveHand(int count)
 // Play a tone with the buzzer / Buzzer ile ses çıkar
 inline void ARMBOT::buzzerPlay(int frequency, int duration)
 {
+#if defined(ESP32)
+  buzzerStart(frequency);
+  delay(duration);
+  buzzerStop();
+#else
   tone(_buzzerPin, frequency, duration);
   delay(duration);
+#endif
 }
 
 inline void ARMBOT::buzzerStart(int frequency)
 {
+#if defined(ESP32)
+  ledcSetup(_buzzerLedcChannel, frequency, 8);
+  ledcWriteTone(_buzzerLedcChannel, frequency);
+#else
   tone(_buzzerPin, frequency);
+#endif
 }
 
 inline void ARMBOT::buzzerStop()
 {
+#if defined(ESP32)
+  ledcWriteTone(_buzzerLedcChannel, 0);
+#else
   noTone(_buzzerPin);
+#endif
 }
 
 // Play the National Anthem / İstiklal Marşı'nı çal

@@ -57,7 +57,7 @@ Bu hafif bir kütüphanedir.
 Katkıda bulunmak isterseniz, lütfen GitHub deposuna Pull Request gönderin. / If you'd like to contribute, please send a Pull Request to the GitHub repository.
 
 # Lisans / License
-Bu kütüphane 2024 Yılında Samed KAYA tarafından lisanslanmıştır. Detaylar için LICENSE dosyasına bakınız. / Copyright (c) 2024 Samed KAYA. All right reserved.
+Bu kütüphane 2024 Yılında CODLAI Teknoloji tarafından lisanslanmıştır. Detaylar için LICENSE dosyasına bakınız. / Copyright (c) 2024 CODLAI Teknoloji. All right reserved.
 
  See the LICENSE file for details.
 

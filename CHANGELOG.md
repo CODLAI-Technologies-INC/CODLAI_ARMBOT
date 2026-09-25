@@ -2,6 +2,10 @@
 
 # CODLAI ERA (New Models)
 
+## [1.0.5] - 2026-09-25
+### Fixed
+- `begin()` artik ESP32 dalinda servo baglanti hatasini `attach()`'in donus degeri yerine `attached()` ile kontrol ediyor. ESP32Servo 3.x `attach()` basarida LEDC kanal numarasini dondurur (ilk servo icin 0); bu deger yanlislikla "hata" sayilip ilk eksen ("Axis 1") her zaman gercekte bagliyken bile "Servo attach failed!" basiyordu.
+
 ## [1.0.4] - 2025-12-18
 ### Updated
 - Revamped the `IOTBOT_Armbot_and_Carbot_Wireless_Control.ino` walkthrough to cover the latest helper APIs for carrier-enabled control flows.

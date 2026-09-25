@@ -1,6 +1,6 @@
 {
   "name": "CODLAI_ARMBOT",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "CODLAI - ARMBOT Library for controlling robotic arm movements. Visit www.codlai.com for more information. / CODLAI - ARMBOT Kütüphanesi, robotik kol hareketlerini kontrol etmek için geliştirilmiştir. Daha fazla bilgi için www.codlai.com adresini ziyaret edin.",
   "keywords": [
     "robotics",
@@ -12,7 +12,7 @@
   ],
   "authors": [
     {
-      "name": "Samed Kaya",
+      "name": "CODLAI Teknoloji",
       "email": "info@codlai.com",
       "url": "https://codlai.com",
       "maintainer": true
