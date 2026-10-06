@@ -2,6 +2,21 @@
 
 # CODLAI ERA (New Models)
 
+## [Unreleased]
+
+## [1.0.6] - 2026-09-29
+### Fixed
+- `IOTBOT_Armbot_and_Carbot_Wireless_Control.ino`: ARMBOT'taki kopya Aralik 2025'ten kalma, artik kullanilmayan eski bir veri yapisiyla yazilmisti ve var olmayan dosya adlarina yonlendiriyordu; CARBOT'taki guncel kopyayla esitlendi. Joystick X (ADC2) ESP-NOW ile okunamadigi icin govde donusu encoder'a tasindi - ayrintilar CODLAI_CARBOT 1.1.3.
+- `MINIBOT_ARMBOT_ESP_NOW_Slave_Control.ino`: 500 ms'de bir "buradayim" sinyali (deviceType 4) gonderiyor; kumanda baglanti gostergesini buna gore ciziyor. Gelen acilar 0-180'e sinirlaniyor.
+- `IOTBOT_Armbot_and_Carbot_Wired_Control.ino`: mod degisiminde pin devri (CARBOT'a donunce motorlar/direksiyon olu kaliyordu) ve magaza modu buton polaritesi duzeltildi - ayrintilar CODLAI_CARBOT 1.1.3.
+- Depoda eski bir PlatformIO kurulum kaydi (`.piopm`, surum 1.2.6) izleniyordu ve GitHub'a da gidiyordu; kutuphaneyi GitHub'dan ya da yerel klasorden (symlink) kuran projelerde bagimlilik agaci yanlis surum gosteriyordu. Dosya kaldirildi ve `.gitignore`'a eklendi. (Duvar projesi oturumunun bulgusu.)
+- `IOTBOT_Armbot_and_Carbot_Wired_Control.ino` derlenmiyordu ("'B12State' does not name a type"): `B12State`, `Mode`, `AppState` tipleri ilk fonksiyondan sonra tanimliydi, Arduino ise fonksiyon prototiplerini ilk fonksiyonun onune ekler. Tip tanimlari dosyanin basina tasindi.
+- `examples/IOTBOT_Armbot_and_Carbot_Wired_Control/` klasorunde ikinci bir `.ino` (`... copy.ino`, Nisan'dan kalma eski deneme) duruyordu; Arduino IDE ayni klasordeki tum `.ino` dosyalarini birlikte derledigi icin `setup()`/`loop()` iki kez tanimlanip ornek acilamiyordu. Kopya kaldirildi (git gecmisinde duruyor).
+
+### Added
+- `MINIBOT_ARMBOT_ESP_NOW_Slave_Control.ino`: magaza modu (`action = 10`) - kumanda CARBOT'u kontrol ederken kol bloklamadan gosteri yapiyor (govde taramasi, omuz/dirsek, kiskac, el sallama) ve normal komut gelince birakiyor. Servolar hedefe sinirli hizla gidiyor (gosteri pozundan kontrole donerken ani sicrama yok). Ayrintilar CODLAI_CARBOT 1.1.3.
+- Yeni ornek: `ARMBOT_RockPaperScissors_Game_Example.ino` - butona her basista buzzer ile "Tas, Kagit, Makas... Cektik!" sayimi yapip ardindan RASTGELE bir el pozu (yumruk/acik el/makas) sergileyen eglenceli, egitici oyun ornegi.
+
 ## [1.0.5] - 2026-09-25
 ### Fixed
 - `begin()` artik ESP32 dalinda servo baglanti hatasini `attach()`'in donus degeri yerine `attached()` ile kontrol ediyor. ESP32Servo 3.x `attach()` basarida LEDC kanal numarasini dondurur (ilk servo icin 0); bu deger yanlislikla "hata" sayilip ilk eksen ("Axis 1") her zaman gercekte bagliyken bile "Servo attach failed!" basiyordu.
