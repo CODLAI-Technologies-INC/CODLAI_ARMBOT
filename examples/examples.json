@@ -1,0 +1,713 @@
+{
+  "schema": 1,
+  "library": "CODLAI_ARMBOT",
+  "description": {
+    "tr": "Örnek dizini: her örneğin yolu, kartı, gereken modüller/ayarlar, özeti ve seri komutları. Kod başlıklarından otomatik üretilir.",
+    "en": "Example index: path, board, required modules/settings, summary and serial commands of each sketch. Generated from the sketch headers."
+  },
+  "examples": [
+    {
+      "name": "ARMBOT_RockPaperScissors_Game_Example",
+      "path": "ARMBOT_RockPaperScissors_Game_Example/ARMBOT_RockPaperScissors_Game_Example.ino",
+      "category": "Robot",
+      "board": "MINIBOT",
+      "chip": "ESP8266",
+      "robot": "ARMBOT",
+      "modules": [],
+      "needsCredentials": false,
+      "needsPeerMac": false,
+      "autoManual": true,
+      "title": {
+        "tr": "EĞLENCELİ PROJE - Taş Kağıt Makas Oyunu (Otomatik demo + Manuel oyun)",
+        "en": "A FUN PROJECT - Rock-Paper-Scissors Game (Auto demo + Manual game)"
+      },
+      "summary": {
+        "tr": "Her elde ARMBOT buzzer ile \"Taş, Kağıt, Makas... ÇEKTİK!\" sayar ve RASTGELE bir el hareketiyle KENDİ seçimini gösterir: Taş = yumruk (kıskaç kapalı), Kağıt = açık el (kıskaç açık), Makas = kıskaç hızlıca aç-kapa yapar. Siz de aynı anda elinizle bir seçim yapın - kim kazandı, siz karar verin! Açılışta OTOMATİK mod çalışır: robot birkaç saniyede bir kendi kendine bir el oynar (vitrin / gösteri). MINIBOT butonu (B1 / GPIO0): kısa basış -> bir el oyna (otomatik moddaysa MANUEL oyuna geçer) uzun basış 1 sn -> OTOMATİK <-> MANUEL",
+        "en": "In every round ARMBOT counts \"Rock, Paper, Scissors... SHOOT!\" on the buzzer, then reveals ITS OWN choice with a RANDOM hand gesture: Rock = fist (gripper closed), Paper = open hand (gripper open), Scissors = the gripper snips open-close quickly. Play your own hand at the same time and decide who wins! At startup AUTO mode runs: the robot plays a round by itself every few seconds (shop window / show). MINIBOT button (B1 / GPIO0): short press -> play a round (in auto mode it switches to the MANUAL game) long press 1 s -> AUTO <-> MANUAL"
+      },
+      "wiring": "NOT / NOTE: Açılar genel bir ARMBOT içindir; kendi kolunuza göre GRIP_OPEN / GRIP_CLOSE değerlerini ayarlayabilirsiniz (küçük açı = açık, diğer CODLAI örnekleriyle aynı). / The angles are for a typical ARMBOT; adjust GRIP_OPEN / GRIP_CLOSE for your arm (small angle = open, same as the other CODLAI examples). ARMBOT'un üzerindeki MINIBOT'a yükleyin (ESP8266). Taban / base GPIO5, omuz / shoulder GPIO4, dirsek / elbow GPIO12, kıskaç / gripper GPIO13, buzzer GPIO14, buton / button GPIO0, mavi LED / blue LED GPIO16.",
+      "serialBaud": 115200,
+      "commands": [
+        {
+          "tr": "yardim",
+          "en": "help",
+          "description": {
+            "tr": "komut listesi",
+            "en": "command list"
+          }
+        },
+        {
+          "tr": "oyna",
+          "en": "play",
+          "description": {
+            "tr": "bir el oyna",
+            "en": "play a round"
+          }
+        },
+        {
+          "tr": "tas, kagit, makas",
+          "en": "rock, paper, scissors",
+          "description": {
+            "tr": "o hareketi göster",
+            "en": "show that gesture"
+          }
+        },
+        {
+          "tr": "oto",
+          "en": "auto, manuel / manual",
+          "description": {
+            "tr": "mod seçimi",
+            "en": "mode select"
+          }
+        },
+        {
+          "tr": "ev",
+          "en": "home",
+          "description": {
+            "tr": "başlangıç pozu",
+            "en": "start pose"
+          }
+        },
+        {
+          "tr": "dur",
+          "en": "stop",
+          "description": {
+            "tr": "eli iptal et, kolu olduğu yerde durdur",
+            "en": "cancel the round, stop the arm where it is"
+          }
+        },
+        {
+          "tr": "dil",
+          "en": "lang",
+          "description": {
+            "tr": "dili değiştir (Türkçe <-> English)",
+            "en": "switch language (Turkish <-> English)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "ARMBOT_Wave_Example",
+      "path": "ARMBOT_Wave_Example/ARMBOT_Wave_Example.ino",
+      "category": "Robot",
+      "board": "MINIBOT",
+      "chip": "ESP8266",
+      "robot": "ARMBOT",
+      "modules": [],
+      "needsCredentials": false,
+      "needsPeerMac": false,
+      "autoManual": true,
+      "title": {
+        "tr": "ARMBOT EL SALLAMA ÖRNEĞİ - Otomatik demo + Manuel kontrol",
+        "en": "ARMBOT WAVE HAND EXAMPLE - Automatic demo + Manual control"
+      },
+      "summary": {
+        "tr": "Açılışta OTOMATİK mod çalışır: kol dirseğini kaldırır, tabanı sağa-sola çevirerek el sallar (önce 3, sonra 5 kez) ve arada dinlenir. MINIBOT üzerindeki butona (B1 / GPIO0) basınca MANUEL moda geçer: kol",
+        "en": "At startup AUTO mode runs: the arm raises its elbow and waves by turning the base left and right (first 3, then 5 times), resting in between. Press the button on the MINIBOT (B1 / GPIO0) to switch to MANUAL mode: the"
+      },
+      "wiring": "ARMBOT'un üzerindeki MINIBOT'a yükleyin (ESP8266). Taban / base GPIO5, omuz / shoulder GPIO4, dirsek / elbow GPIO12, kıskaç / gripper GPIO13, buzzer GPIO14, buton / button GPIO0, mavi LED / blue LED GPIO16.",
+      "serialBaud": 115200,
+      "commands": [
+        {
+          "tr": "yardim",
+          "en": "help",
+          "description": {
+            "tr": "komut listesi",
+            "en": "command list"
+          }
+        },
+        {
+          "tr": "oto",
+          "en": "auto",
+          "description": {
+            "tr": "otomatik mod",
+            "en": "auto mode"
+          }
+        },
+        {
+          "tr": "manuel",
+          "en": "manual",
+          "description": {
+            "tr": "manuel mod",
+            "en": "manual mode"
+          }
+        },
+        {
+          "tr": "salla 3",
+          "en": "wave 3",
+          "description": {
+            "tr": "armbot.waveHand(3) ile el salla (1-10)",
+            "en": "wave with armbot.waveHand(3) (1-10)"
+          }
+        },
+        {
+          "tr": "taban 90",
+          "en": "base 90",
+          "description": {
+            "tr": "taban açısı 0-180",
+            "en": "base angle 0-180"
+          }
+        },
+        {
+          "tr": "omuz 90",
+          "en": "shoulder 90",
+          "description": {
+            "tr": "omuz açısı 0-180",
+            "en": "shoulder angle 0-180"
+          }
+        },
+        {
+          "tr": "dirsek 50",
+          "en": "elbow 50",
+          "description": {
+            "tr": "dirsek açısı 0-180",
+            "en": "elbow angle 0-180"
+          }
+        },
+        {
+          "tr": "kiskac ac",
+          "en": "gripper open",
+          "description": {
+            "tr": "kıskacı aç (kapat / close: kapat)",
+            "en": "open the gripper (close / kapat: close)"
+          }
+        },
+        {
+          "tr": "ev",
+          "en": "home",
+          "description": {
+            "tr": "başlangıç pozu",
+            "en": "start pose"
+          }
+        },
+        {
+          "tr": "dur",
+          "en": "stop",
+          "description": {
+            "tr": "kolu olduğu yerde durdur",
+            "en": "stop the arm where it is"
+          }
+        },
+        {
+          "tr": "dil",
+          "en": "lang",
+          "description": {
+            "tr": "dili değiştir (Türkçe <-> English)",
+            "en": "switch language (Turkish <-> English)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "ARMBOT_basic_example",
+      "path": "ARMBOT_basic_example/ARMBOT_basic_example.ino",
+      "category": "Robot",
+      "board": "MINIBOT",
+      "chip": "ESP8266",
+      "robot": "ARMBOT",
+      "modules": [],
+      "needsCredentials": false,
+      "needsPeerMac": false,
+      "autoManual": true,
+      "title": {
+        "tr": "ARMBOT TEMEL ÖRNEK - Otomatik demo + Manuel kontrol",
+        "en": "ARMBOT BASIC EXAMPLE - Automatic demo + Manual control"
+      },
+      "summary": {
+        "tr": "Açılışta OTOMATİK mod çalışır: kol önce her ekseni sırayla gösterir (taban, omuz, dirsek, kıskaç: bir uç, diğer uç, orta), ardından birkaç rastgele \"evcil robot\" hareketi yapar ve baştan başlar. MINIBOT üzerindeki butona (B1 / GPIO0) basınca MANUEL moda geçer: kol",
+        "en": "At startup AUTO mode runs: the arm first shows every axis in turn (base, shoulder, elbow, gripper: one end, the other end, middle), then makes a few random \"robot pet\" moves and starts over. Press the button on the MINIBOT (B1 / GPIO0) to switch to MANUAL mode: the"
+      },
+      "wiring": "ARMBOT'un üzerindeki MINIBOT'a yükleyin (ESP8266). Taban / base GPIO5, omuz / shoulder GPIO4, dirsek / elbow GPIO12, kıskaç / gripper GPIO13, buzzer GPIO14, buton / button GPIO0, mavi LED / blue LED GPIO16. IOTBOT ile kullanım için / to use with an IOTBOT: IOTBOT_ARMBOT_Basic_Example.",
+      "serialBaud": 115200,
+      "commands": [
+        {
+          "tr": "yardim",
+          "en": "help",
+          "description": {
+            "tr": "komut listesi",
+            "en": "command list"
+          }
+        },
+        {
+          "tr": "oto",
+          "en": "auto",
+          "description": {
+            "tr": "otomatik mod",
+            "en": "auto mode"
+          }
+        },
+        {
+          "tr": "manuel",
+          "en": "manual",
+          "description": {
+            "tr": "manuel mod",
+            "en": "manual mode"
+          }
+        },
+        {
+          "tr": "taban 90",
+          "en": "base 90",
+          "description": {
+            "tr": "taban (eksen 1) açısı 0-180",
+            "en": "base (axis 1) angle 0-180"
+          }
+        },
+        {
+          "tr": "omuz 90",
+          "en": "shoulder 90",
+          "description": {
+            "tr": "omuz (eksen 2) açısı 0-180",
+            "en": "shoulder (axis 2) angle 0-180"
+          }
+        },
+        {
+          "tr": "dirsek 50",
+          "en": "elbow 50",
+          "description": {
+            "tr": "dirsek (eksen 3) açısı 0-180",
+            "en": "elbow (axis 3) angle 0-180"
+          }
+        },
+        {
+          "tr": "kiskac ac",
+          "en": "gripper open",
+          "description": {
+            "tr": "kıskacı aç",
+            "en": "open the gripper"
+          }
+        },
+        {
+          "tr": "kiskac kapat",
+          "en": "gripper close",
+          "description": {
+            "tr": "kıskacı kapat",
+            "en": "close the gripper"
+          }
+        },
+        {
+          "tr": "kiskac 60",
+          "en": "gripper 60",
+          "description": {
+            "tr": "kıskaç açısı 0-180",
+            "en": "gripper angle 0-180"
+          }
+        },
+        {
+          "tr": "ev",
+          "en": "home",
+          "description": {
+            "tr": "başlangıç (kalibrasyon) pozu",
+            "en": "start (calibration) pose"
+          }
+        },
+        {
+          "tr": "dur",
+          "en": "stop",
+          "description": {
+            "tr": "kolu olduğu yerde durdur",
+            "en": "stop the arm where it is"
+          }
+        },
+        {
+          "tr": "durum",
+          "en": "status",
+          "description": {
+            "tr": "açıları yazdır",
+            "en": "print the angles"
+          }
+        },
+        {
+          "tr": "dil",
+          "en": "lang",
+          "description": {
+            "tr": "dili değiştir (Türkçe <-> English)",
+            "en": "switch language (Turkish <-> English)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "IOTBOT_ARMBOT_Basic_Example",
+      "path": "IOTBOT_ARMBOT_Basic_Example/IOTBOT_ARMBOT_Basic_Example.ino",
+      "category": "Robot",
+      "board": "IOTBOT",
+      "chip": "ESP32",
+      "robot": "ARMBOT",
+      "modules": [],
+      "needsCredentials": false,
+      "needsPeerMac": false,
+      "autoManual": true,
+      "title": {
+        "tr": "IOTBOT + ARMBOT TEMEL ÖRNEK - Otomatik demo + Manuel kontrol",
+        "en": "IOTBOT + ARMBOT BASIC EXAMPLE - Automatic demo + Manual control"
+      },
+      "summary": {
+        "tr": "Açılışta OTOMATİK mod çalışır: kol sırayla tabanı (0°-180°), omzu (45°-135°), dirseği ve kıskacı oynatır, sonra baştan başlar. B3 butonuna basınca MANUEL moda geçer, kolu kart üzerindeki kontrollerle siz sürersiniz. B3'e tekrar basınca otomatik moda döner. Joystick sol/sağ -> taban (eksen 1) Joystick ileri/geri-> omuz (eksen 2) Potansiyometre -> dirsek (eksen 3) Joystick butonu -> kıskaç aç / kapat Servolar her zaman yavaşça (adım adım) hedefe gider; loop hiç bloklanmaz.",
+        "en": "At startup AUTO mode runs: the arm moves the base (0°-180°), the shoulder (45°-135°), the elbow and the gripper in turn, then starts over. Press B3 to switch to MANUAL mode and drive the arm with the onboard controls. Press B3 again to go back to auto mode. Joystick left/right -> base (axis 1) Joystick forward/back -> shoulder (axis 2) Potentiometer -> elbow (axis 3) Joystick button -> gripper open / close The servos always move slowly (step by step); the loop never blocks."
+      },
+      "wiring": "ARMBOT kablosunu IOTBOT'un P1-P5 soketlerine takın: taban / base IO25, omuz / shoulder IO26, dirsek / elbow IO27, kıskaç / gripper IO32, ARMBOT buzzer IO33. Bu soketlere başka modül takmayın. / Plug the ARMBOT cable into the IOTBOT's P1-P5 sockets (pins above). Do not plug other modules into these sockets.",
+      "serialBaud": 115200,
+      "commands": [
+        {
+          "tr": "yardim",
+          "en": "help",
+          "description": {
+            "tr": "komut listesi",
+            "en": "command list"
+          }
+        },
+        {
+          "tr": "oto",
+          "en": "auto",
+          "description": {
+            "tr": "otomatik mod",
+            "en": "auto mode"
+          }
+        },
+        {
+          "tr": "manuel",
+          "en": "manual",
+          "description": {
+            "tr": "manuel mod",
+            "en": "manual mode"
+          }
+        },
+        {
+          "tr": "taban 90",
+          "en": "base 90",
+          "description": {
+            "tr": "taban açısı 0-180",
+            "en": "base angle 0-180"
+          }
+        },
+        {
+          "tr": "omuz 90",
+          "en": "shoulder 90",
+          "description": {
+            "tr": "omuz açısı 0-180",
+            "en": "shoulder angle 0-180"
+          }
+        },
+        {
+          "tr": "dirsek 50",
+          "en": "elbow 50",
+          "description": {
+            "tr": "dirsek açısı 0-180",
+            "en": "elbow angle 0-180"
+          }
+        },
+        {
+          "tr": "kiskac ac",
+          "en": "gripper open",
+          "description": {
+            "tr": "kıskacı aç",
+            "en": "open the gripper"
+          }
+        },
+        {
+          "tr": "kiskac kapat",
+          "en": "gripper close",
+          "description": {
+            "tr": "kıskacı kapat",
+            "en": "close the gripper"
+          }
+        },
+        {
+          "tr": "ev",
+          "en": "home",
+          "description": {
+            "tr": "başlangıç (kalibrasyon) pozu",
+            "en": "start (calibration) pose"
+          }
+        },
+        {
+          "tr": "dur",
+          "en": "stop",
+          "description": {
+            "tr": "kolu olduğu yerde durdur",
+            "en": "stop the arm where it is"
+          }
+        },
+        {
+          "tr": "dil",
+          "en": "lang",
+          "description": {
+            "tr": "dili değiştir (Türkçe <-> English)",
+            "en": "switch language (Turkish <-> English)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "IOTBOT_Armbot_and_Carbot_Wired_Control",
+      "path": "IOTBOT_Armbot_and_Carbot_Wired_Control/IOTBOT_Armbot_and_Carbot_Wired_Control.ino",
+      "category": "Robot",
+      "board": "IOTBOT",
+      "chip": "ESP32",
+      "robot": "ARMBOT",
+      "modules": [],
+      "needsCredentials": false,
+      "needsPeerMac": false,
+      "autoManual": false,
+      "title": {
+        "tr": "IOTBOT ile ARMBOT ve CARBOT Kablolu Kumanda",
+        "en": "IOTBOT Armbot and Carbot Wired Control"
+      },
+      "summary": {
+        "tr": "IOTBOT, CARBOT'u ya da ARMBOT'u KABLOYLA dogrudan surer. Iki robot da ayni P1-P5 soketlerini (IO25, 26, 27, 32, 33) kullanir: ayni anda TEK robot takilir, mod degistirirken kabloyu da degistirin. Kablosuz surum icin: IOTBOT_Armbot_and_Carbot_Wireless_Control.ino",
+        "en": "The IOTBOT drives CARBOT or ARMBOT directly over a CABLE. Both robots use the same P1-P5 sockets (IO25, 26, 27, 32, 33): plug in ONE robot at a time and swap the cable when you switch modes. Wireless version: IOTBOT_Armbot_and_Carbot_Wireless_Control.ino Kontroller / Controls: Mod / mode: Joystick sol/sag + encoder'a bas; calisirken encoder'a bas = mod degistir CARBOT: Joystick X = direksiyon / steering, Joystick Y = hiz / speed, B1 = korna (nota potansiyometreden) / horn (note from the pot), B2 = far otomatik/elle / lights auto/manual, B3 = far ac/kapa (elle) / lights toggle (manual) ARMBOT: Joystick X = govde / base, Joystick Y = omuz / shoulder, Pot = dirsek / elbow, Encoder = kiskac / gripper, B3 = kiskac ac/kapa / gripper open/close, B1 = korna / horn, B2 = nota / note, Joystick butonu = magaza (demo) modu / store (demo) mode Seri port (115200 baud), Türkçe veya İngilizce / Serial port, Turkish or English:"
+      },
+      "wiring": "",
+      "serialBaud": 115200,
+      "commands": [
+        {
+          "tr": "yardim",
+          "en": "help",
+          "description": {
+            "tr": "komut listesi",
+            "en": "command list"
+          }
+        },
+        {
+          "tr": "durum",
+          "en": "status",
+          "description": {
+            "tr": "mod, far, kol açıları",
+            "en": "mode, lights, arm angles"
+          }
+        },
+        {
+          "tr": "dil",
+          "en": "lang",
+          "description": {
+            "tr": "ekran ve seri port dilini değiştir",
+            "en": "switch screen and serial language"
+          }
+        }
+      ]
+    },
+    {
+      "name": "IOTBOT_Armbot_and_Carbot_Wireless_Control",
+      "path": "IOTBOT_Armbot_and_Carbot_Wireless_Control/IOTBOT_Armbot_and_Carbot_Wireless_Control.ino",
+      "category": "Robot",
+      "board": "IOTBOT",
+      "chip": "ESP32",
+      "robot": "ARMBOT",
+      "modules": [
+        "espnow",
+        "wifi"
+      ],
+      "needsCredentials": false,
+      "needsPeerMac": false,
+      "autoManual": false,
+      "title": {
+        "tr": "IOTBOT ile ARMBOT ve CARBOT Kablosuz Kumanda (ESP-NOW)",
+        "en": "IOTBOT Armbot and Carbot Wireless Control (ESP-NOW Master)"
+      },
+      "summary": {
+        "tr": "Tek bir IOTBOT ile CARBOT'u ve ARMBOT'u kablosuz (ESP-NOW) kontrol eder. Robotlarin uzerindeki MINIBOT'lara su ornekleri yukleyin: CARBOT: MINIBOT_CARBOT_ESP_NOW_Slave_Control.ino ARMBOT: MINIBOT_ARMBOT_ESP_NOW_Slave_Control.ino Hepsi kanal 1'de, yayin (broadcast) adresiyle haberlesir.",
+        "en": "Controls CARBOT and ARMBOT wirelessly (ESP-NOW) from one IOTBOT. Upload these to the MINIBOTs on the robots: CARBOT: MINIBOT_CARBOT_ESP_NOW_Slave_Control.ino ARMBOT: MINIBOT_ARMBOT_ESP_NOW_Slave_Control.ino All talk on channel 1 using the broadcast address. Kontroller / Controls: Mod secimi / mode select : Encoder'i cevir, encoder'a bas / turn the encoder, press it Calisirken / while running: Encoder'a bas = CARBOT <-> ARMBOT CARBOT: Joystick Y = ileri/geri hiz / forward-backward speed, Potansiyometre = direksiyon / steering, Joystick butonu = far / lights, B3 = korna / horn, Joystick butonu + B3 = far otomatik/elle / lights auto/manual ARMBOT: Joystick X ve encoder = govde donusu / base rotation, Joystick Y = omuz / shoulder, Potansiyometre = dirsek / elbow, B3 = kiskac ac/kapa / gripper open/close MAGAZA MODU / STORE MODE: Kontrol edilmeyen robot kendiliginden magaza moduna girer - CARBOT surulurken ARMBOT gosteri yapar, ARMBOT kullanilirken CARBOT (yerinde) gosteri yapar. Robot normal komut alinca hemen cikar. / The robot that is NOT being controlled enters store mode by itself - ARMBOT shows off while CARBOT is driven, CARBOT does an (in-place) show while ARMBOT is used. It leaves store mode as soon as a normal command arrives."
+      },
+      "wiring": "NOT / NOTE: Joystick X (GPIO15) bir ADC2 pinidir; ESP32'de WiFi/ESP-NOW calisirken ADC2 cogu zaman MESGULDUR. X, okumanin gercekten basarili olup olmadigini soyleyen adc2_get_raw() ile denenir: basarili okuma varsa govde joystick X ile doner, yoksa X ortada sayilir ve encoder calismaya devam eder. Ekranda \"X+\" = X okunuyor, \"X-\" = okunamiyor. Mod secimi encoder iledir. / Joystick X (GPIO15) is an ADC2 pin; on the ESP32 ADC2 is usually BUSY while WiFi/ESP-NOW runs. X is tried with adc2_get_raw(), which reports whether the read really succeeded: if it does, the base turns with joystick X, otherwise X counts as centered and the encoder keeps working. Screen: \"X+\" = X readable, \"X-\" = not readable. Mode selection uses the encoder. Protokol / Protocol (CodlaiESPNowMessage.deviceType): 1 = ARMBOT komutu / command (axis1..3 + gripper, 0-180 derece / degrees) 2 = CARBOT komutu / command (axis1 = direksiyon / steering 45-135, axis2 = hiz / speed 0-180: 90 dur / stop, <80 geri / backward, >100 ileri / forward, action 1 korna / horn, 2 far acik / lights on, 3 far kapali / lights off) 3 = CARBOT telemetrisi / telemetry (axis3 = mesafe cm / distance cm, -1 = bilinmiyor / unknown) 4 = ARMBOT \"buradayim\" sinyali / heartbeat Tip 1 veya 2'de action = 10: o robot magaza moduna girsin / that robot enters store mode Seri port (115200 baud), Türkçe veya İngilizce / Serial port, Turkish or English: yardim / help -> komut listesi / command list durum / status -> mod, robot bağlantıları, açılar / mode, robot links, angles dil / lang -> ekran ve seri port dilini değiştir / switch screen and serial language Ekranda / on screen: \"*\" = robottan sinyal var / signal from the robot, \"-\" = yok / none, \"(O)\" / \"(A)\" = far otomatik (LDR) / lights automatic (LDR).",
+      "serialBaud": 115200,
+      "commands": [
+        {
+          "tr": "yardim",
+          "en": "help",
+          "description": {
+            "tr": "komut listesi",
+            "en": "command list"
+          }
+        },
+        {
+          "tr": "durum",
+          "en": "status",
+          "description": {
+            "tr": "mod, robot bağlantıları, açılar",
+            "en": "mode, robot links, angles"
+          }
+        },
+        {
+          "tr": "dil",
+          "en": "lang",
+          "description": {
+            "tr": "ekran ve seri port dilini değiştir",
+            "en": "switch screen and serial language"
+          }
+        }
+      ]
+    },
+    {
+      "name": "MINIBOT_ARMBOT_ESP_NOW_Slave_Control",
+      "path": "MINIBOT_ARMBOT_ESP_NOW_Slave_Control/MINIBOT_ARMBOT_ESP_NOW_Slave_Control.ino",
+      "category": "Robot",
+      "board": "MINIBOT",
+      "chip": "ESP8266",
+      "robot": "ARMBOT",
+      "modules": [
+        "espnow",
+        "servo",
+        "wifi"
+      ],
+      "needsCredentials": false,
+      "needsPeerMac": false,
+      "autoManual": false,
+      "title": {
+        "tr": "ARMBOT ESP-NOW Slave Kontrolü",
+        "en": "ARMBOT ESP-NOW Slave Control"
+      },
+      "summary": {
+        "tr": "ARMBOT üzerindeki MINIBOT'a yüklenir; IOTBOT kumandadan ESP-NOW ile gelen gövde, omuz, dirsek ve kıskaç açılarını uygular. Kumanda: IOTBOT_Armbot_and_Carbot_Wireless_Control.ino yüklü IOTBOT. 500 ms komut gelmezse robot güvenlik için durur; kumanda diğer robotu kullanırken bu robot mağaza moduna (gösteri) geçer. Robot seri porttan sürülmez.",
+        "en": "Upload to the MINIBOT on ARMBOT; it applies the base, shoulder, elbow and gripper angles sent by the IOTBOT controller over ESP-NOW. Controller: an IOTBOT running IOTBOT_Armbot_and_Carbot_Wireless_Control.ino. If no command arrives for 500 ms the robot stops for safety; while the controller uses the other robot this one enters store (show) mode. It is not driven from serial."
+      },
+      "wiring": "",
+      "serialBaud": 115200,
+      "commands": [
+        {
+          "tr": "yardim",
+          "en": "help",
+          "description": {
+            "tr": "komut listesi",
+            "en": "command list"
+          }
+        },
+        {
+          "tr": "durum",
+          "en": "status",
+          "description": {
+            "tr": "mod ve açılar",
+            "en": "mode and angles"
+          }
+        },
+        {
+          "tr": "dil",
+          "en": "lang",
+          "description": {
+            "tr": "dili değiştir",
+            "en": "switch language (Türkçe <-> English)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "MINIBOT_ARMBOT_Store_Demo_Mode",
+      "path": "MINIBOT_ARMBOT_Store_Demo_Mode/MINIBOT_ARMBOT_Store_Demo_Mode.ino",
+      "category": "Robot",
+      "board": "MINIBOT",
+      "chip": "ESP8266",
+      "robot": "ARMBOT",
+      "modules": [],
+      "needsCredentials": false,
+      "needsPeerMac": false,
+      "autoManual": true,
+      "title": {
+        "tr": "ARMBOT MAĞAZA (GÖSTERİ) MODU - kumanda gerekmez",
+        "en": "ARMBOT STORE (SHOW) MODE - no controller needed"
+      },
+      "summary": {
+        "tr": "Açılışta OTOMATİK mod çalışır: kol sürekli bir gösteri yapar (taban taraması, omuz/dirsek, kıskaç aç/kapa, el sallama) ve her bölümde kısa bir bip sesi çıkarır. Gösteri adım adım (bloklamadan) çalışır. MINIBOT üzerindeki butona (B1 / GPIO0) basınca MANUEL moda geçer: kol",
+        "en": "At startup AUTO mode runs: the arm loops a show (base sweep, shoulder/elbow, gripper open/close, waving) with a short beep for each part. The show runs step by step (without blocking). Press the button on the MINIBOT (B1 / GPIO0) to switch to MANUAL mode: the"
+      },
+      "wiring": "ARMBOT'un üzerindeki MINIBOT'a yükleyin (ESP8266). Taban / base GPIO5, omuz / shoulder GPIO4, dirsek / elbow GPIO12, kıskaç / gripper GPIO13, buzzer GPIO14, buton / button GPIO0, mavi LED / blue LED GPIO16.",
+      "serialBaud": 115200,
+      "commands": [
+        {
+          "tr": "yardim",
+          "en": "help",
+          "description": {
+            "tr": "komut listesi",
+            "en": "command list"
+          }
+        },
+        {
+          "tr": "oto",
+          "en": "auto",
+          "description": {
+            "tr": "otomatik mod (gösteri)",
+            "en": "auto mode (show)"
+          }
+        },
+        {
+          "tr": "manuel",
+          "en": "manual",
+          "description": {
+            "tr": "manuel mod (seri komutlar)",
+            "en": "manual mode (serial commands)"
+          }
+        },
+        {
+          "tr": "taban 90",
+          "en": "base 90",
+          "description": {
+            "tr": "tabanı 90°'ye çevir",
+            "en": "turn the base to 90°"
+          }
+        },
+        {
+          "tr": "omuz 90",
+          "en": "shoulder 90",
+          "description": {
+            "tr": "omzu 90°'ye götür",
+            "en": "move the shoulder to 90°"
+          }
+        },
+        {
+          "tr": "dirsek 50",
+          "en": "elbow 50",
+          "description": {
+            "tr": "dirseği 50°'ye götür",
+            "en": "move the elbow to 50°"
+          }
+        },
+        {
+          "tr": "kiskac ac",
+          "en": "gripper open",
+          "description": {
+            "tr": "kıskacı aç",
+            "en": "open the gripper"
+          }
+        },
+        {
+          "tr": "kiskac kapat",
+          "en": "gripper close",
+          "description": {
+            "tr": "kıskacı kapat",
+            "en": "close the gripper"
+          }
+        },
+        {
+          "tr": "kiskac 60",
+          "en": "gripper 60",
+          "description": {
+            "tr": "kıskacı 60°'ye götür",
+            "en": "move the gripper to 60°"
+          }
+        },
+        {
+          "tr": "ev",
+          "en": "home",
+          "description": {
+            "tr": "başlangıç pozuna dön",
+            "en": "back to the start pose"
+          }
+        },
+        {
+          "tr": "dur",
+          "en": "stop",
+          "description": {
+            "tr": "kolu hemen durdur",
+            "en": "stop the arm now"
+          }
+        },
+        {
+          "tr": "dil",
+          "en": "lang",
+          "description": {
+            "tr": "dili değiştir (Türkçe <-> English)",
+            "en": "switch language (Turkish <-> English)"
+          }
+        }
+      ]
+    }
+  ]
+}

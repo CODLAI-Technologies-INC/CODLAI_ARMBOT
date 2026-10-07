@@ -18,6 +18,13 @@
  * Servolar hedefe SINIRLI hizla gider: gosteri pozundan normal kontrole donerken
  * kol ani sicrama yapmaz. / Servos approach their target at a LIMITED speed, so
  * the arm does not jump when going from a show pose back to normal control.
+ *
+ * Seri port (115200 baud), Türkçe veya İngilizce / Serial port, Turkish or English:
+ *   yardim / help   -> komut listesi / command list
+ *   durum / status  -> mod ve açılar / mode and angles
+ *   dil / lang      -> dili değiştir / switch language (Türkçe <-> English)
+ * Kol seri porttan sürülmez; kontrol kumandadadır. / The arm is not driven from
+ * the serial port; the controller is in charge.
  */
 
 #define USE_ESPNOW
@@ -28,6 +35,11 @@
 
 MINIBOT minibot;
 ARMBOT armbot;
+
+// Dil seçimi: true = Türkçe, false = English. Seri porttan "dil" / "lang" ile de değişir.
+// Language: true = Turkish, false = English. Can also be changed with "dil" / "lang".
+bool turkish = true;
+const char *L(const char *tr, const char *en) { return turkish ? tr : en; }
 
 static const uint8_t TYPE_ARM_CMD = 1;
 static const uint8_t TYPE_ARM_HEARTBEAT = 4;
@@ -95,6 +107,91 @@ void writeServos()
   armbot.gripperMotion(current[3], 0);
 }
 
+// ---------------------------------------------------------------------------
+// Seri komut okuyucu (bloklamaz) / Serial command reader (non-blocking)
+// Seri Monitör'ün satır sonu ayarı ne olursa olsun çalışır (NL, CR, ikisi, hiçbiri).
+// Works with any Serial Monitor line-ending setting (NL, CR, both, none).
+// ---------------------------------------------------------------------------
+String cmdBuffer;
+unsigned long lastCharMs = 0;
+
+// Küçük harfe çevirir ve Türkçe harfleri sadeleştirir: "YARDIM" -> "yardim"
+// Lower-cases and simplifies Turkish letters: "YARDIM" -> "yardim"
+String normalizeCommand(String s)
+{
+  s.trim();
+  s.replace("İ", "i"); s.replace("I", "i"); s.replace("ı", "i");
+  s.replace("Ş", "s"); s.replace("ş", "s");
+  s.replace("Ğ", "g"); s.replace("ğ", "g");
+  s.replace("Ü", "u"); s.replace("ü", "u");
+  s.replace("Ö", "o"); s.replace("ö", "o");
+  s.replace("Ç", "c"); s.replace("ç", "c");
+  s.toLowerCase();
+  return s;
+}
+
+bool readCommand(String &cmd)
+{
+  while (Serial.available() > 0)
+  {
+    char c = Serial.read();
+    lastCharMs = millis();
+    if (c == '\n' || c == '\r')
+    {
+      if (cmdBuffer.length() == 0)
+        continue;
+      cmd = normalizeCommand(cmdBuffer);
+      cmdBuffer = "";
+      return true;
+    }
+    if (cmdBuffer.length() < 40)
+      cmdBuffer += c;
+  }
+  // "Satır sonu yok" seçiliyse: 150 ms sessizlikten sonra komutu kabul et.
+  // "No line ending" selected: accept the command after 150 ms of silence.
+  if (cmdBuffer.length() > 0 && millis() - lastCharMs > 150)
+  {
+    cmd = normalizeCommand(cmdBuffer);
+    cmdBuffer = "";
+    return true;
+  }
+  return false;
+}
+
+void printHelp()
+{
+  minibot.serialWrite(L("---- ARMBOT ALICI - Komutlar ----", "---- ARMBOT RECEIVER - Commands ----"));
+  minibot.serialWrite(L("  yardim : bu liste", "  help   : this list"));
+  minibot.serialWrite(L("  durum  : mod ve açılar", "  status : mode and angles"));
+  minibot.serialWrite(L("  dil    : English'e geç", "  lang   : switch to Turkish"));
+  minibot.serialWrite(L("  Kol, IOTBOT kablosuz kumandasıyla (kanal 1) yönetilir.",
+                        "  The arm is driven by the IOTBOT wireless controller (channel 1)."));
+}
+
+void handleCommand(const String &cmd)
+{
+  if (cmd == "yardim" || cmd == "help" || cmd == "?")
+  {
+    printHelp();
+  }
+  else if (cmd == "durum" || cmd == "status")
+  {
+    minibot.serialWrite(String(L("Mod: ", "Mode: ")) + (storeMode ? L("mağaza", "store") : L("kontrol", "control")) +
+                        L(" | taban ", " | base ") + current[0] + L(" omuz ", " shoulder ") + current[1] +
+                        L(" dirsek ", " elbow ") + current[2] + L(" kıskaç ", " gripper ") + current[3]);
+  }
+  else if (cmd == "dil" || cmd == "lang" || cmd == "language")
+  {
+    turkish = !turkish;
+    minibot.serialWrite(L("Dil: Türkçe", "Language: English"));
+    printHelp();
+  }
+  else
+  {
+    minibot.serialWrite(String(L("Bilinmeyen komut: ", "Unknown command: ")) + cmd + L("  (yardim yazın)", "  (type help)"));
+  }
+}
+
 void setup()
 {
   minibot.begin();
@@ -106,7 +203,7 @@ void setup()
   armbot.begin();
   writeServos();
 
-  minibot.serialWrite("Initializing ESP-NOW Slave...");
+  minibot.serialWrite(L("ESP-NOW alıcısı (ARMBOT) başlatılıyor...", "Initializing ESP-NOW receiver (ARMBOT)..."));
 
   minibot.initESPNow();
   minibot.setWiFiChannel(1); // Master ile aynı kanalda olmalı / Must be on same channel as Master
@@ -124,7 +221,8 @@ void setup()
 #endif
 
   minibot.startListening();
-  minibot.serialWrite("Ready to receive commands!");
+  minibot.serialWrite(L("Komutları almaya hazır!", "Ready to receive commands!"));
+  printHelp();
 }
 
 void loop()
@@ -146,13 +244,13 @@ void loop()
           storeMode = true;
           showIndex = 0;
           setShowTarget(showIndex);
-          minibot.serialWrite("Magaza modu / store mode");
+          minibot.serialWrite(L("Mağaza modu", "Store mode"));
         }
       }
       else
       {
         if (storeMode)
-          minibot.serialWrite("Kontrol modu / control mode");
+          minibot.serialWrite(L("Kontrol modu", "Control mode"));
         storeMode = false;
         target[0] = constrain(msg.axis1, 0, 180);
         target[1] = constrain(msg.axis2, 0, 180);
@@ -215,4 +313,10 @@ void loop()
     hb.deviceType = TYPE_ARM_HEARTBEAT;
     esp_now_send(broadcastAddress, (uint8_t *)&hb, sizeof(hb));
   }
+
+  // Seri komutlar (yalnızca yardım/durum/dil; kontrolü etkilemez)
+  // / Serial commands (help/status/lang only; they don't affect control)
+  String cmd;
+  if (readCommand(cmd))
+    handleCommand(cmd);
 }

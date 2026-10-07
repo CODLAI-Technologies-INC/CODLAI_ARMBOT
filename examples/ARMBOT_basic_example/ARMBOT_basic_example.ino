@@ -1,451 +1,381 @@
-#include <ARMBOT.h>
+/*
+ * TR: ARMBOT TEMEL ÖRNEK - Otomatik demo + Manuel kontrol
+ *  - Açılışta OTOMATİK mod çalışır: kol önce her ekseni sırayla gösterir
+ *    (taban, omuz, dirsek, kıskaç: bir uç, diğer uç, orta), ardından birkaç
+ *    rastgele "evcil robot" hareketi yapar ve baştan başlar.
+ *  - MINIBOT üzerindeki butona (B1 / GPIO0) basınca MANUEL moda geçer: kol
+ *    olduğu yerde durur ve seri port komutlarıyla siz yönetirsiniz. Butona
+ *    tekrar basınca otomatik moda döner.
+ *  - Servolar her zaman yavaşça (adım adım) hedefe gider; loop hiç bloklanmaz,
+ *    buton ve seri komutlar anında çalışır. Hareket ederken mavi LED yanar.
+ *  - Seri port komutları (115200 baud). Türkçe veya İngilizce yazabilirsiniz:
+ *      yardim           / help              -> komut listesi
+ *      oto              / auto              -> otomatik mod
+ *      manuel           / manual            -> manuel mod
+ *      taban 90         / base 90           -> taban (eksen 1) açısı 0-180
+ *      omuz 90          / shoulder 90       -> omuz (eksen 2) açısı 0-180
+ *      dirsek 50        / elbow 50          -> dirsek (eksen 3) açısı 0-180
+ *      kiskac ac        / gripper open      -> kıskacı aç
+ *      kiskac kapat     / gripper close     -> kıskacı kapat
+ *      kiskac 60        / gripper 60        -> kıskaç açısı 0-180
+ *      ev               / home              -> başlangıç (kalibrasyon) pozu
+ *      dur              / stop              -> kolu olduğu yerde durdur
+ *      durum            / status            -> açıları yazdır
+ *      dil              / lang              -> dili değiştir (Türkçe <-> English)
+ *    Bir hareket komutu otomatik moddayken gelirse kol manuel moda geçer.
+ *
+ * EN: ARMBOT BASIC EXAMPLE - Automatic demo + Manual control
+ *  - At startup AUTO mode runs: the arm first shows every axis in turn
+ *    (base, shoulder, elbow, gripper: one end, the other end, middle), then
+ *    makes a few random "robot pet" moves and starts over.
+ *  - Press the button on the MINIBOT (B1 / GPIO0) to switch to MANUAL mode: the
+ *    arm stops where it is and you drive it with serial commands. Press the
+ *    button again to go back to auto mode.
+ *  - The servos always move slowly (step by step) to their target; the loop
+ *    never blocks, so the button and serial commands react instantly. The blue
+ *    LED is on while the arm is moving.
+ *  - Serial port commands (115200 baud). You can type Turkish or English:
+ *      help             / yardim            -> command list
+ *      auto             / oto               -> auto mode
+ *      manual           / manuel            -> manual mode
+ *      base 90          / taban 90          -> base (axis 1) angle 0-180
+ *      shoulder 90      / omuz 90           -> shoulder (axis 2) angle 0-180
+ *      elbow 50         / dirsek 50         -> elbow (axis 3) angle 0-180
+ *      gripper open     / kiskac ac         -> open the gripper
+ *      gripper close    / kiskac kapat      -> close the gripper
+ *      gripper 60       / kiskac 60         -> gripper angle 0-180
+ *      home             / ev                -> start (calibration) pose
+ *      stop             / dur               -> stop the arm where it is
+ *      status           / durum             -> print the angles
+ *      lang             / dil               -> switch language (Turkish <-> English)
+ *    A motion command received in auto mode switches the arm to manual mode.
+ *
+ * Bağlantı / Wiring: ARMBOT'un üzerindeki MINIBOT'a yükleyin (ESP8266).
+ *   Taban / base GPIO5, omuz / shoulder GPIO4, dirsek / elbow GPIO12,
+ *   kıskaç / gripper GPIO13, buzzer GPIO14, buton / button GPIO0, mavi LED / blue LED GPIO16.
+ *   IOTBOT ile kullanım için / to use with an IOTBOT: IOTBOT_ARMBOT_Basic_Example.
+ */
 
-// Uncomment the following line if testing on IOTBOT to enable LCD feedback (IOTBOT ekranında durum görmek için aşağıdaki satırı aktif edin)
-// #define USE_IOTBOT_SCREEN
+#include <ARMBOT.h> // ARMBOT kütüphanesi / ARMBOT library
 
-#ifdef USE_IOTBOT_SCREEN
-#include <IOTBOT.h>
-IOTBOT iotbot;
-#endif
+ARMBOT armbot; // ARMBOT nesnesi / ARMBOT object
 
-#define LED_PIN 16 // Minibot blue LED pin (Minibot mavi led pini)
-#define B1_PIN 0   // Minibot built-in button
+#define LED_PIN 16   // MINIBOT mavi LED / MINIBOT blue LED
+#define BUTTON_PIN 0 // MINIBOT B1 butonu (basılıyken LOW) / MINIBOT B1 button (LOW while pressed)
 
-ARMBOT armbot;
+// Dil seçimi: true = Türkçe, false = English. Seri porttan "dil" / "lang" ile de değişir.
+// Language: true = Turkish, false = English. Can also be changed with "dil" / "lang".
+bool turkish = true;
+const char *L(const char *tr, const char *en) { return turkish ? tr : en; }
 
-enum Mode { IDLE_MODE, DEMO_MODE, RANDOM_MODE };
-Mode currentMode = IDLE_MODE; // Varsayılan mod durgun (IDLE)
-bool demoDone = false;
-unsigned long afkTimer = 0; // AFK zamanlayıcısı
+// Kıskaç açıları (diğer CODLAI örnekleriyle aynı: küçük açı = açık)
+// Gripper angles (same as the other CODLAI examples: small angle = open)
+const int GRIP_OPEN = 20;
+const int GRIP_CLOSE = 120;
+const int HOME_POSE[4] = {90, 90, 50, 60}; // Kalibrasyon pozu / calibration pose
 
-// Button logic variables
-bool b1State = false;
-unsigned long b1Timer = 0;
-int b1Clicks = 0;
-bool b1LongPressed = false;
+// ---------------------------------------------------------------------------
+// Servo hareket motoru / Servo motion engine
+// Her eksen "current" açısından "target" açısına her stepMs'de 1° yaklaşır.
+// Each axis moves 1° from "current" toward "target" every stepMs.
+// ---------------------------------------------------------------------------
+// 0 taban, 1 omuz, 2 dirsek, 3 kıskaç / 0 base, 1 shoulder, 2 elbow, 3 gripper
+int current[4] = {90, 90, 50, 60};
+int target[4] = {90, 90, 50, 60};
+int stepMs = 20;         // Derece başına ms (büyük = yavaş) / ms per degree (bigger = slower)
+uint32_t lastServoMs = 0;
 
-// Helper function to print status to Serial and IOTBOT LCD (Seri porta ve IOTBOT LCD'ye durum yazdıran yardımcı fonksiyon)
-void showStatus(String title, String detail = "")
-{
-  if (detail == "") {
-    armbot.serialWrite(title);
+void writeServo(int axis, int angle) {
+  // Hız 0 = bekleme yapmadan doğrudan yaz / speed 0 = write directly, no waiting
+  if (axis == 0) armbot.axis1Motion(angle, 0);
+  else if (axis == 1) armbot.axis2Motion(angle, 0);
+  else if (axis == 2) armbot.axis3Motion(angle, 0);
+  else armbot.gripperMotion(angle, 0);
+}
+
+bool atTarget() {
+  for (int i = 0; i < 4; i++)
+    if (current[i] != target[i]) return false;
+  return true;
+}
+
+void setPose(int base, int shoulder, int elbow, int gripper) {
+  target[0] = constrain(base, 0, 180);
+  target[1] = constrain(shoulder, 0, 180);
+  target[2] = constrain(elbow, 0, 180);
+  target[3] = constrain(gripper, 0, 180);
+}
+
+void freezeArm() { // Kolu olduğu yerde tut / hold the arm where it is
+  for (int i = 0; i < 4; i++) target[i] = current[i];
+}
+
+void updateServos(uint32_t now) {
+  if (now - lastServoMs < (uint32_t)stepMs) return;
+  lastServoMs = now;
+  for (int i = 0; i < 4; i++) {
+    if (current[i] != target[i]) {
+      current[i] += (target[i] > current[i]) ? 1 : -1;
+      writeServo(i, current[i]);
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Otomatik demo / Automatic demo
+// ---------------------------------------------------------------------------
+// Her satır bir poz: taban, omuz, dirsek, kıskaç, bekleme (ms), açıklama.
+// Each row is a pose: base, shoulder, elbow, gripper, hold time (ms), label.
+struct DemoPose { int a[4]; uint16_t holdMs; const char *tr; const char *en; };
+const DemoPose DEMO[] = {
+    {{0, 90, 50, 60}, 1000, "Eksen 1 (taban): 0°", "Axis 1 (base): 0°"},
+    {{180, 90, 50, 60}, 1000, "Eksen 1 (taban): 180°", "Axis 1 (base): 180°"},
+    {{90, 90, 50, 60}, 1000, "Eksen 1 (taban): 90°", "Axis 1 (base): 90°"},
+    {{90, 0, 50, 60}, 1000, "Eksen 2 (omuz): 0°", "Axis 2 (shoulder): 0°"},
+    {{90, 180, 50, 60}, 1000, "Eksen 2 (omuz): 180°", "Axis 2 (shoulder): 180°"},
+    {{90, 90, 50, 60}, 1000, "Eksen 2 (omuz): 90°", "Axis 2 (shoulder): 90°"},
+    {{90, 90, 20, 60}, 1000, "Eksen 3 (dirsek): 20°", "Axis 3 (elbow): 20°"},
+    {{90, 90, 180, 60}, 1000, "Eksen 3 (dirsek): 180°", "Axis 3 (elbow): 180°"},
+    {{90, 90, 50, 60}, 1000, "Eksen 3 (dirsek): 50°", "Axis 3 (elbow): 50°"},
+    {{90, 90, 50, 0}, 1000, "Kıskaç: 0° (açık)", "Gripper: 0° (open)"},
+    {{90, 90, 50, 110}, 1000, "Kıskaç: 110° (kapalı)", "Gripper: 110° (closed)"},
+    {{90, 90, 50, 60}, 1000, "Kıskaç: 60°", "Gripper: 60°"},
+};
+const int DEMO_LEN = sizeof(DEMO) / sizeof(DEMO[0]);
+const int RANDOM_MOVES = 6; // Demo sonrası rastgele hareket sayısı / random moves after the demo
+
+int demoIndex = 0;            // 0..DEMO_LEN-1 demo, sonrası rastgele / after that: random moves
+uint32_t poseReachedMs = 0;   // Poza varış zamanı (0 = henüz varmadı) / time the pose was reached
+uint16_t holdMs = 0;          // Bu pozda bekleme süresi / hold time at this pose
+
+void startDemoStep() {
+  poseReachedMs = 0;
+  if (demoIndex < DEMO_LEN) {
+    const DemoPose &p = DEMO[demoIndex];
+    setPose(p.a[0], p.a[1], p.a[2], p.a[3]);
+    holdMs = p.holdMs;
+    stepMs = 20;
+    Serial.println(String(L("Demo: ", "Demo: ")) + L(p.tr, p.en));
+    if (demoIndex % 3 == 0) armbot.buzzerPlay(600 + demoIndex * 40, 60); // Yeni eksen sesi / new axis chirp
   } else {
-    armbot.serialWrite(title + ": " + detail);
+    // Rastgele "evcil robot" hareketi: bir eksen, güvenli bir açı.
+    // Random "robot pet" move: one axis, a safe angle.
+    int axis = random(0, 4);
+    int angle;
+    if (axis == 2) angle = random(40, 140);      // Dirsek yere vurmasın / keep the elbow off the ground
+    else if (axis == 3) angle = random(0, 110);
+    else angle = random(20, 160);
+    target[axis] = angle;
+    holdMs = random(300, 1500);
+    stepMs = 30;
+    const char *namesTr[4] = {"taban", "omuz", "dirsek", "kıskaç"};
+    const char *namesEn[4] = {"base", "shoulder", "elbow", "gripper"};
+    Serial.println(String(L("Rastgele: ", "Random: ")) + L(namesTr[axis], namesEn[axis]) + " -> " + angle + "°");
+    if (axis == 3) armbot.buzzerPlay(random(600, 1200), 50); // Kıskaç robotik bir ses çıkarır / gripper chirps
   }
+}
 
-#ifdef USE_IOTBOT_SCREEN
-  iotbot.lcdClear();
-  iotbot.lcdWriteCR(0, 0, title);
-  if (detail != "") {
-    iotbot.lcdWriteCR(0, 1, detail);
+void runAutoDemo(uint32_t now) {
+  if (!atTarget()) return;
+  if (poseReachedMs == 0) {
+    poseReachedMs = now;
+    return;
   }
-#endif
-}
-
-// Sesli bildirim fonksiyonu (Audible Feedback for Modes)
-void playModeSound(Mode m) {
-    if (m == IDLE_MODE) {
-        // IDLE: Durgun mod (Tek kalın tok ses)
-        armbot.buzzerPlay(200, 150);
-    } else if (m == RANDOM_MODE) {
-        // RANDOM: Otonom eğlenceli robotik ritim
-        armbot.buzzerPlay(800, 100);
-        delay(50);
-        armbot.buzzerPlay(600, 100);
-        delay(50);
-        armbot.buzzerPlay(1000, 150);
-    } else if (m == DEMO_MODE) {
-        // DEMO: Demo başliyor cıngılı (3 neşeli nota)
-        armbot.buzzerPlay(400, 100);
-        delay(50);
-        armbot.buzzerPlay(500, 100);
-        delay(50);
-        armbot.buzzerPlay(650, 200);
+  if (now - poseReachedMs >= holdMs) {
+    demoIndex++;
+    if (demoIndex >= DEMO_LEN + RANDOM_MOVES) {
+      demoIndex = 0;
+      Serial.println(L("Demo baştan başlıyor.", "Demo starts over."));
     }
+    startDemoStep();
+  }
 }
 
-// --- RTOS BUTTON WATCHER (ESP32 Ozel) ---
-// Motor hareketleri (axis1Motion vb.) ARMBOT kütüphanesinde bekleme(delay/loop) içerdiği için
-// hareket sırasında butonu okuyabilmek adına arka planda RTOS süreci başlatıyoruz.
-#if defined(ESP32)
-TaskHandle_t btnTaskHandle;
-void buttonWatcherTask(void * parameter) {
-    for(;;) {
-        // Minibot uzerindeki donanimsal butonu I2C çakışması olmadan sürekli dinler
-        if (digitalRead(B1_PIN) == LOW) {
-            // Herhangi bir butona basilma aninda kilitlenen motor sweep islemini keser.
-            // Kilit acilinca ana dongudeki checkButtons hizlica isler ve dogru modu secer.
-            armbot.abortMotion(); 
-        }
-        vTaskDelay(pdMS_TO_TICKS(50));
+// ---------------------------------------------------------------------------
+// Seri komut okuyucu / Serial command reader
+// Seri Monitör'ün satır sonu ayarı ne olursa olsun çalışır (NL, CR, ikisi, hiçbiri).
+// Works with any Serial Monitor line-ending setting (NL, CR, both, none).
+// ---------------------------------------------------------------------------
+String cmdBuffer;
+uint32_t lastCharMs = 0;
+
+// Küçük harfe çevirir ve Türkçe harfleri sadeleştirir: "KISKAÇ" -> "kiskac"
+// Lower-cases and simplifies Turkish letters: "KISKAÇ" -> "kiskac"
+String normalizeCommand(String s) {
+  s.trim();
+  s.replace("İ", "i"); s.replace("I", "i"); s.replace("ı", "i");
+  s.replace("Ş", "s"); s.replace("ş", "s");
+  s.replace("Ğ", "g"); s.replace("ğ", "g");
+  s.replace("Ü", "u"); s.replace("ü", "u");
+  s.replace("Ö", "o"); s.replace("ö", "o");
+  s.replace("Ç", "c"); s.replace("ç", "c");
+  s.toLowerCase();
+  return s;
+}
+
+bool readCommand(String &cmd) {
+  while (Serial.available() > 0) {
+    char c = Serial.read();
+    lastCharMs = millis();
+    if (c == '\n' || c == '\r') {
+      if (cmdBuffer.length() == 0) continue;
+      cmd = normalizeCommand(cmdBuffer);
+      cmdBuffer = "";
+      return true;
     }
-}
-#endif
-
-bool isB1Pressed() {
-#ifdef USE_IOTBOT_SCREEN
-  return iotbot.button1Read();
-#else
-  return (digitalRead(B1_PIN) == LOW);
-#endif
-}
-
-bool isB2Pressed() {
-#ifdef USE_IOTBOT_SCREEN
-  return iotbot.button2Read();
-#else
+    if (cmdBuffer.length() < 40) cmdBuffer += c;
+  }
+  // "Satır sonu yok" seçiliyse: 150 ms sessizlikten sonra komutu kabul et.
+  // "No line ending" selected: accept the command after 150 ms of silence.
+  if (cmdBuffer.length() > 0 && millis() - lastCharMs > 150) {
+    cmd = normalizeCommand(cmdBuffer);
+    cmdBuffer = "";
+    return true;
+  }
   return false;
-#endif
 }
 
-// Checks buttons dynamically. Returns true if a mode switch occurred so callers can abort their sequence.
-bool checkButtons() {
-    bool b1Pressed = isB1Pressed();
-    bool modeChanged = false;
-    
-    // Check for double click timeout (wait 400ms for second click)
-    if (!b1Pressed && b1Clicks > 0 && (millis() - b1Timer > 400)) {
-        if (b1Clicks == 2) {
-            // Double click action: Toggle RANDOM_MODE
-            if (currentMode == RANDOM_MODE) {
-                currentMode = IDLE_MODE;
-                showStatus("Mod Degisti", "IDLE (Durgun)");
-                playModeSound(IDLE_MODE);
-                armbot.axis1Motion(90, 20); armbot.axis2Motion(90, 20);
-                armbot.axis3Motion(50, 20); armbot.gripperMotion(60, 20);
-                afkTimer = millis(); 
-                modeChanged = true;
-            } else if (currentMode == IDLE_MODE) {
-                currentMode = RANDOM_MODE;
-                showStatus("Mod Degisti", "RANDOM MODE");
-                playModeSound(RANDOM_MODE);
-                afkTimer = millis(); 
-                modeChanged = true;
-            }
-        }
-        b1Clicks = 0; 
-    }
+// ---------------------------------------------------------------------------
+// Mesajlar ve modlar / Messages and modes
+// ---------------------------------------------------------------------------
+bool manualMode = false; // false = OTOMATİK, true = MANUEL / false = AUTO, true = MANUAL
 
-    if (b1Pressed && !b1State) {
-        // Button just pressed
-        b1State = true;
-        b1Timer = millis();
-        b1LongPressed = false;
-        afkTimer = millis(); 
-    } else if (b1Pressed && b1State) {
-        // Button held
-        if (!b1LongPressed && (millis() - b1Timer > 1000)) {
-            b1LongPressed = true;
-            // Hold action: Toggle DEMO_MODE
-            if (currentMode == DEMO_MODE) {
-               currentMode = IDLE_MODE;
-               showStatus("Mod Degisti", "IDLE (Durgun)");
-               playModeSound(IDLE_MODE);
-               armbot.axis1Motion(90, 20); armbot.axis2Motion(90, 20);
-               armbot.axis3Motion(50, 20); armbot.gripperMotion(60, 20);
-               modeChanged = true;
-            } else if (currentMode == IDLE_MODE) {
-               currentMode = DEMO_MODE;
-               demoDone = false;
-               showStatus("Mod Degisti", "DEMO MODE");
-               playModeSound(DEMO_MODE);
-               modeChanged = true;
-            }
-            // If in RANDOM_MODE, we ignore the hold to prevent activating demo by mistake.
-            
-            b1Clicks = 0; 
-        }
-    } else if (!b1Pressed && b1State) {
-        // Button just released
-        b1State = false;
-        if (!b1LongPressed) {
-            b1Clicks++;
-            b1Timer = millis(); 
-        }
-    }
-
-    // For IOTBOT users: B2 functions as a panic button returning to IDLE
-    bool b2Pressed = isB2Pressed();
-    if (b2Pressed && currentMode != IDLE_MODE) {
-        currentMode = IDLE_MODE;
-        showStatus("Mod Degisti", "IDLE (Durgun)");
-        playModeSound(IDLE_MODE);
-        armbot.axis1Motion(90, 20); armbot.axis2Motion(90, 20);
-        armbot.axis3Motion(50, 20); armbot.gripperMotion(60, 20);
-        afkTimer = millis();
-        modeChanged = true;
-    }
-
-    return modeChanged;
+void printHelp() {
+  Serial.println(L("---- ARMBOT - Komutlar ----", "---- ARMBOT - Commands ----"));
+  Serial.println(L("  yardim          : bu liste", "  help            : this list"));
+  Serial.println(L("  oto / manuel    : otomatik / manuel mod", "  auto / manual   : auto / manual mode"));
+  Serial.println(L("  taban 0-180     : taban açısı", "  base 0-180      : base angle"));
+  Serial.println(L("  omuz 0-180      : omuz açısı", "  shoulder 0-180  : shoulder angle"));
+  Serial.println(L("  dirsek 0-180    : dirsek açısı", "  elbow 0-180     : elbow angle"));
+  Serial.println(L("  kiskac ac/kapat : kıskacı aç / kapat", "  gripper open/close : open / close the gripper"));
+  Serial.println(L("  kiskac 0-180    : kıskaç açısı", "  gripper 0-180   : gripper angle"));
+  Serial.println(L("  ev              : başlangıç pozu", "  home            : start pose"));
+  Serial.println(L("  dur             : kolu durdur", "  stop            : stop the arm"));
+  Serial.println(L("  durum           : açıları yazdır", "  status          : print the angles"));
+  Serial.println(L("  dil             : English'e geç", "  lang            : switch to Turkish"));
+  Serial.println(L("  Buton (B1)      : OTOMATİK <-> MANUEL", "  Button (B1)     : AUTO <-> MANUAL"));
 }
 
-// Macro to replace delay() with a non-blocking delay that periodically checks for button presses
-#define SMART_DELAY(ms) \
-  do { \
-    unsigned long s = millis(); \
-    while(millis() - s < ms) { \
-      if (checkButtons()) return; \
-      delay(50); \
-    } \
-  } while(0)
-
-// ---- DEMO MODE SEQUENCE ----
-void runFullArmbotDemo()
-{
-  // Axis 1 movements
-  showStatus("Hareket: Eksen 1");
-  digitalWrite(LED_PIN, HIGH);
-  armbot.buzzerPlay(100, 200); 
-  digitalWrite(LED_PIN, LOW);
-  SMART_DELAY(100); if(currentMode != DEMO_MODE) return;
-
-  showStatus("Eksen 1", "0 Derece");
-  digitalWrite(LED_PIN, HIGH);
-  armbot.axis1Motion(0, 20); 
-  digitalWrite(LED_PIN, LOW);
-  SMART_DELAY(1000); if(currentMode != DEMO_MODE) return;
-  
-  showStatus("Eksen 1", "180 Derece");
-  digitalWrite(LED_PIN, HIGH);
-  armbot.axis1Motion(180, 20); 
-  digitalWrite(LED_PIN, LOW);
-  SMART_DELAY(1000); if(currentMode != DEMO_MODE) return;
-  
-  showStatus("Eksen 1", "90 Derece");
-  digitalWrite(LED_PIN, HIGH);
-  armbot.axis1Motion(90, 20); 
-  digitalWrite(LED_PIN, LOW);
-  SMART_DELAY(1000); if(currentMode != DEMO_MODE) return;
-
-  // Axis 2 movements
-  showStatus("Hareket: Eksen 2");
-  digitalWrite(LED_PIN, HIGH);
-  armbot.buzzerPlay(100, 50); 
-  digitalWrite(LED_PIN, LOW);
-  SMART_DELAY(100); if(currentMode != DEMO_MODE) return;
-  digitalWrite(LED_PIN, HIGH);
-  armbot.buzzerPlay(200, 200); 
-  digitalWrite(LED_PIN, LOW);
-  SMART_DELAY(100); if(currentMode != DEMO_MODE) return;
-
-  showStatus("Eksen 2", "0 Derece");
-  digitalWrite(LED_PIN, HIGH);
-  armbot.axis2Motion(0, 20); 
-  digitalWrite(LED_PIN, LOW);
-  SMART_DELAY(1000); if(currentMode != DEMO_MODE) return;
-  
-  showStatus("Eksen 2", "180 Derece");
-  digitalWrite(LED_PIN, HIGH);
-  armbot.axis2Motion(180, 20); 
-  digitalWrite(LED_PIN, LOW);
-  SMART_DELAY(1000); if(currentMode != DEMO_MODE) return;
-  
-  showStatus("Eksen 2", "90 Derece");
-  digitalWrite(LED_PIN, HIGH);
-  armbot.axis2Motion(90, 20); 
-  digitalWrite(LED_PIN, LOW);
-  SMART_DELAY(1000); if(currentMode != DEMO_MODE) return;
-
-  // Axis 3 movements
-  showStatus("Hareket: Eksen 3");
-  digitalWrite(LED_PIN, HIGH);
-  armbot.buzzerPlay(100, 50); 
-  digitalWrite(LED_PIN, LOW);
-  SMART_DELAY(100); if(currentMode != DEMO_MODE) return;
-  digitalWrite(LED_PIN, HIGH);
-  armbot.buzzerPlay(150, 50); 
-  digitalWrite(LED_PIN, LOW);
-  SMART_DELAY(100); if(currentMode != DEMO_MODE) return;
-  digitalWrite(LED_PIN, HIGH);
-  armbot.buzzerPlay(200, 200); 
-  digitalWrite(LED_PIN, LOW);
-  SMART_DELAY(100); if(currentMode != DEMO_MODE) return;
-
-  showStatus("Eksen 3", "20 Derece");
-  digitalWrite(LED_PIN, HIGH);
-  armbot.axis3Motion(20, 20); 
-  digitalWrite(LED_PIN, LOW);
-  SMART_DELAY(1000); if(currentMode != DEMO_MODE) return;
-  
-  showStatus("Eksen 3", "180 Derece");
-  digitalWrite(LED_PIN, HIGH);
-  armbot.axis3Motion(180, 20); 
-  digitalWrite(LED_PIN, LOW);
-  SMART_DELAY(1000); if(currentMode != DEMO_MODE) return;
-  
-  showStatus("Eksen 3", "50 Derece");
-  digitalWrite(LED_PIN, HIGH);
-  armbot.axis3Motion(50, 20); 
-  digitalWrite(LED_PIN, LOW);
-  SMART_DELAY(1000); if(currentMode != DEMO_MODE) return;
-
-  // Gripper
-  showStatus("Hareket: Gripper");
-  digitalWrite(LED_PIN, HIGH);
-  armbot.buzzerPlay(100, 50); 
-  digitalWrite(LED_PIN, LOW);
-  SMART_DELAY(100); if(currentMode != DEMO_MODE) return;
-  digitalWrite(LED_PIN, HIGH);
-  armbot.buzzerPlay(150, 50); 
-  digitalWrite(LED_PIN, LOW);
-  SMART_DELAY(100); if(currentMode != DEMO_MODE) return;
-  digitalWrite(LED_PIN, HIGH);
-  armbot.buzzerPlay(200, 50); 
-  digitalWrite(LED_PIN, LOW);
-  SMART_DELAY(100); if(currentMode != DEMO_MODE) return;
-  digitalWrite(LED_PIN, HIGH);
-  armbot.buzzerPlay(225, 200); 
-  digitalWrite(LED_PIN, LOW);
-  SMART_DELAY(100); if(currentMode != DEMO_MODE) return;
-
-  showStatus("Gripper", "0 Derece (Acik)");
-  digitalWrite(LED_PIN, HIGH);
-  armbot.gripperMotion(0, 20); 
-  digitalWrite(LED_PIN, LOW);
-  SMART_DELAY(1000); if(currentMode != DEMO_MODE) return;
-  
-  showStatus("Gripper", "110 Derece (Kapali)");
-  digitalWrite(LED_PIN, HIGH);
-  armbot.gripperMotion(110, 20); 
-  digitalWrite(LED_PIN, LOW);
-  SMART_DELAY(1000); if(currentMode != DEMO_MODE) return;
-  
-  showStatus("Gripper", "60 Derece");
-  digitalWrite(LED_PIN, HIGH);
-  armbot.gripperMotion(60, 20); 
-  digitalWrite(LED_PIN, LOW);
-  SMART_DELAY(1000); if(currentMode != DEMO_MODE) return;
+void printStatus() {
+  Serial.println(String(L("Mod: ", "Mode: ")) + (manualMode ? L("MANUEL", "MANUAL") : L("OTOMATİK", "AUTO")) +
+                 L(" | taban ", " | base ") + current[0] + L("° omuz ", "° shoulder ") + current[1] +
+                 L("° dirsek ", "° elbow ") + current[2] + L("° kıskaç ", "° gripper ") + current[3] + "°");
 }
 
-// ---- RANDOM (ROBOTIC PET / FACTORY WANDERER) MODE ----
-void runRandomMode() 
-{
-  // Pick a random axis (0: Axis1, 1: Axis2, 2: Axis3, 3: Gripper)
-  int selectedAxis = random(0, 4);
-  int rndAngle = 0;
-  
-  digitalWrite(LED_PIN, HIGH);
-  
-  if (selectedAxis == 0) {
-      rndAngle = random(20, 160);
-      showStatus("Rastgele (Random)", "Eksen 1 -> " + String(rndAngle));
-      armbot.axis1Motion(rndAngle, 30);
-  } else if (selectedAxis == 1) {
-      rndAngle = random(20, 160);
-      showStatus("Rastgele (Random)", "Eksen 2 -> " + String(rndAngle));
-      armbot.axis2Motion(rndAngle, 30);
-  } else if (selectedAxis == 2) {
-      rndAngle = random(40, 140); // Eksen 3'ün yere vurmaması için limitli
-      showStatus("Rastgele (Random)", "Eksen 3 -> " + String(rndAngle));
-      armbot.axis3Motion(rndAngle, 30);
+void setMode(bool manual) {
+  manualMode = manual;
+  armbot.buzzerPlay(manual ? 1500 : 1000, 60);
+  if (manual) {
+    freezeArm(); // Manuelde kol olduğu yerde bekler / in manual the arm waits where it is
+    stepMs = 15;
+    Serial.println(L(">> MANUEL mod: kolu seri komutlarla yönetin (yardim yazın).",
+                     ">> MANUAL mode: drive the arm with serial commands (type help)."));
   } else {
-      rndAngle = random(0, 110);
-      showStatus("Rastgele (Random)", "Gripper -> " + String(rndAngle));
-      armbot.gripperMotion(rndAngle, 30);
-      armbot.buzzerPlay(random(600, 1200), 50); // Gripper hareketleri robotik küçük sesler yapar
+    demoIndex = 0;
+    startDemoStep();
+    Serial.println(L(">> OTOMATİK mod: kol demoyu kendi kendine yapıyor.", ">> AUTO mode: the arm runs the demo by itself."));
   }
-  
-  digitalWrite(LED_PIN, LOW);
-
-  // Kısa veya uzun rastgele bekleme (Organik görünüm)
-  int waitTime = random(300, 1500); 
-  SMART_DELAY(waitTime);
 }
 
-// ---- IDLE MODE ----
-void runIdleMode() 
-{
-  // AFK (Durgunluk) Kontrolü - 15 saniyeden uzun süredir butona basılmadıysa
-  if (millis() - afkTimer > 15000) {
-    showStatus("Durum", "AFK! Buradayim.");
-    
-    // Flaşör
-    digitalWrite(LED_PIN, HIGH);
-    SMART_DELAY(75); if(currentMode != IDLE_MODE) return;
-    digitalWrite(LED_PIN, LOW);
-    SMART_DELAY(75); if(currentMode != IDLE_MODE) return;
-    digitalWrite(LED_PIN, HIGH);
-    SMART_DELAY(75); if(currentMode != IDLE_MODE) return;
-    digitalWrite(LED_PIN, LOW);
-    
-    // Sevimli nefes alma hareketi (Eksen 3 hafif inip kalkar)
-    armbot.axis3Motion(60, 10);
-    SMART_DELAY(500); if(currentMode != IDLE_MODE) return;
-    armbot.axis3Motion(50, 10);
-    
-    // Küçük AFK ping sesi
-    armbot.buzzerPlay(1500, 50);
-    
-    afkTimer = millis(); 
-  }
-
-  // Butonları hızlı dinleyebilmek için
-  SMART_DELAY(250);
+// Bir eksene seri komutla açı ver / give an axis an angle from a serial command
+void moveAxisCommand(int axis, int angle) {
+  if (!manualMode) setMode(true);
+  target[axis] = constrain(angle, 0, 180);
+  const char *namesTr[4] = {"Taban", "Omuz", "Dirsek", "Kıskaç"};
+  const char *namesEn[4] = {"Base", "Shoulder", "Elbow", "Gripper"};
+  Serial.println(String(L(namesTr[axis], namesEn[axis])) + L(" hedefi: ", " target: ") + target[axis] + "°");
 }
 
-void setup()
-{
-  armbot.serialStart(115200);
-  armbot.begin();
-  
+void handleCommand(const String &cmd) {
+  int space = cmd.indexOf(' ');
+  String word = (space < 0) ? cmd : cmd.substring(0, space);
+  String arg = (space < 0) ? String("") : cmd.substring(space + 1);
+  arg.trim();
+  bool hasValue = arg.length() > 0 && (isDigit(arg[0]) || arg[0] == '-');
+  int value = arg.toInt();
+
+  if (word == "yardim" || word == "help" || word == "?") {
+    printHelp();
+  } else if (word == "oto" || word == "otomatik" || word == "auto") {
+    setMode(false);
+  } else if (word == "manuel" || word == "manual") {
+    setMode(true);
+  } else if ((word == "taban" || word == "base") && hasValue) {
+    moveAxisCommand(0, value);
+  } else if ((word == "omuz" || word == "shoulder") && hasValue) {
+    moveAxisCommand(1, value);
+  } else if ((word == "dirsek" || word == "elbow") && hasValue) {
+    moveAxisCommand(2, value);
+  } else if (word == "kiskac" || word == "gripper") {
+    if (arg == "ac" || arg == "open") moveAxisCommand(3, GRIP_OPEN);
+    else if (arg == "kapat" || arg == "close") moveAxisCommand(3, GRIP_CLOSE);
+    else if (hasValue) moveAxisCommand(3, value);
+    else Serial.println(L("Kullanım: kiskac ac | kiskac kapat | kiskac 0-180", "Usage: gripper open | gripper close | gripper 0-180"));
+  } else if (word == "ev" || word == "home") {
+    if (!manualMode) setMode(true);
+    setPose(HOME_POSE[0], HOME_POSE[1], HOME_POSE[2], HOME_POSE[3]);
+    Serial.println(L("Başlangıç pozuna gidiliyor.", "Going to the start pose."));
+  } else if (word == "dur" || word == "stop") {
+    // Dur her zaman çalışır: kol olduğu yerde kalır ve manuele geçer.
+    // Stop always works: the arm stays where it is and switches to manual.
+    if (!manualMode) setMode(true);
+    freezeArm();
+    Serial.println(L("Kol durduruldu.", "Arm stopped."));
+  } else if (word == "durum" || word == "status") {
+    printStatus();
+  } else if (word == "dil" || word == "lang" || word == "language") {
+    turkish = !turkish;
+    Serial.println(L("Dil: Türkçe", "Language: English"));
+    printHelp();
+  } else {
+    Serial.println(String(L("Bilinmeyen komut: ", "Unknown command: ")) + cmd + L("  (yardim yazın)", "  (type help)"));
+  }
+}
+
+// ---------------------------------------------------------------------------
+bool lastButton = false;
+uint32_t lastButtonMs = 0;
+
+// Butona yeni basıldıysa true (titreşim süzgeçli) / true on a new press (debounced)
+bool buttonPressed(uint32_t now) {
+  bool pressed = (digitalRead(BUTTON_PIN) == LOW);
+  bool edge = pressed && !lastButton && (now - lastButtonMs) > 200;
+  if (edge) lastButtonMs = now;
+  lastButton = pressed;
+  return edge;
+}
+
+void setup() {
+  armbot.serialStart(115200); // Seri haberleşme / Serial communication
+  armbot.begin();             // Servolar başlangıç pozunda / servos start at the home pose
   pinMode(LED_PIN, OUTPUT);
-  pinMode(B1_PIN, INPUT_PULLUP);
+  pinMode(BUTTON_PIN, INPUT_PULLUP);
+  randomSeed(analogRead(A0));
 
-#ifdef USE_IOTBOT_SCREEN
-  iotbot.begin();
-#endif
-  
-  // Basit rastgelelik tohumlaması (Random Seed)
-  randomSeed(analogRead(14));
+  for (int i = 0; i < 4; i++) writeServo(i, current[i]);
 
-  // Başlangıç noktasında duruş ayarı
-  armbot.axis1Motion(90, 20);
-  armbot.axis2Motion(90, 20);
-  armbot.axis3Motion(50, 20);
-  armbot.gripperMotion(60, 20);
-
-  showStatus("ARMBOT Ready", "IDLE MODE (Durgun)");
-  // Açılış sesi
-  playModeSound(IDLE_MODE); 
-  afkTimer = millis(); 
-
-  // RTOS Arka Plan Sürecini Başlat
-#if defined(ESP32)
-  xTaskCreate(
-      buttonWatcherTask, 
-      "BtnWatcher", 
-      2048, 
-      NULL, 
-      1, 
-      &btnTaskHandle
-  );
-#endif
+  Serial.println();
+  Serial.println(L("ARMBOT temel örnek başladı.", "ARMBOT basic example started."));
+  printHelp();
+  setMode(false); // OTOMATİK modla başla / start in AUTO mode
 }
 
-void loop()
-{
-  // Buton dinleyicisi her dongude kontrol edilir 
-  if (checkButtons()) return;
+void loop() {
+  uint32_t now = millis();
 
-  if (currentMode == DEMO_MODE) {
-    if (!demoDone) {
-      runFullArmbotDemo();
-      demoDone = true;
-      // Demo bittikten sonra kendi kendine tekrar durgun moda geçer
-      if (currentMode == DEMO_MODE) {
-        currentMode = IDLE_MODE;
-        afkTimer = millis(); 
-        showStatus("Demo Bitti", "IDLE (Durgun)");
-        playModeSound(IDLE_MODE);
-        armbot.axis1Motion(90, 20); armbot.axis2Motion(90, 20);
-        armbot.axis3Motion(50, 20); armbot.gripperMotion(60, 20);
-      }
-    }
-  } 
-  else if (currentMode == RANDOM_MODE) {
-    runRandomMode();
-  }
-  else if (currentMode == IDLE_MODE) {
-    runIdleMode();
-  }
+  // 1) Buton -> mod değiştir (sadece basıldığı an) / button -> toggle mode (on press only)
+  if (buttonPressed(now)) setMode(!manualMode);
+
+  // 2) Seri komutlar / Serial commands
+  String cmd;
+  if (readCommand(cmd)) handleCommand(cmd);
+
+  // 3) Otomatik demo / Automatic demo
+  if (!manualMode) runAutoDemo(now);
+
+  // 4) Servoları hedefe doğru yürüt (loop hiç bloklanmaz) / walk the servos to the target (loop never blocks)
+  updateServos(now);
+
+  // 5) Hareket ederken mavi LED yanar / blue LED on while moving
+  digitalWrite(LED_PIN, atTarget() ? LOW : HIGH);
 }

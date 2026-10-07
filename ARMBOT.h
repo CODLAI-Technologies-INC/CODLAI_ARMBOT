@@ -82,17 +82,9 @@ private:
   const int _gripperPin = 13;
   const int _buzzerPin = 14;
 #else
-#define AXIS1_CUSTOM_PIN
-#define AXIS2_CUSTOM_PIN
-#define AXIS3_CUSTOM_PIN
-#define AXIS4_CUSTOM_PIN
-#define BUZZER_CUSTOM_PIN
-
-  const int _axis1Pin = AXIS1_CUSTOM_PIN;
-  const int _axis2Pin = AXIS2_CUSTOM_PIN;
-  const int _axis3Pin = AXIS3_CUSTOM_PIN;
-  const int _gripperPin = AXIS4_CUSTOM_PIN;
-  const int _buzzerPin = BUZZER_CUSTOM_PIN;
+  // Bos pin tanimlari anlasilmaz bir derleme hatasi veriyordu; net mesaj ver.
+  // Empty pin macros used to cause a cryptic compile error; give a clear message.
+#error "Unsupported platform! Only ESP32 and ESP8266 are supported."
 #endif
 };
 
@@ -102,12 +94,12 @@ private:
 inline void ARMBOT::begin()
 {
 #if defined(ESP32)
-  Serial.println("Initializing ARMBOT on ESP32...");
+  Serial.println("ARMBOT ESP32 uzerinde baslatiliyor... / Initializing ARMBOT on ESP32...");
 #elif defined(ESP8266)
-  Serial.println("Initializing ARMBOT on ESP8266...");
-  analogWriteFreq(50); // **ESP8266 için PWM frekansını 50 Hz olarak ayarla**
+  Serial.println("ARMBOT ESP8266 uzerinde baslatiliyor... / Initializing ARMBOT on ESP8266...");
+  analogWriteFreq(50); // ESP8266 icin PWM frekansini 50 Hz yap / set ESP8266 PWM frequency to 50 Hz
 #else
-  Serial.println("Initializing ARMBOT on an unknown platform...");
+  Serial.println("ARMBOT bilinmeyen bir platformda baslatiliyor... / Initializing ARMBOT on an unknown platform...");
 #endif
 
   // Servo bağlama fonksiyonu / Function to attach servos
@@ -118,14 +110,14 @@ inline void ARMBOT::begin()
     // servo icin 0); bu deger !servo.attach(...) ile "hata" gibi
     // okunuyordu ve ilk eksen her zaman yanlislikla "attach failed"
     // basiyordu. Donus degeri yerine attached() durumuna bakiyoruz.
-    servo.attach(pin, 500, 2500); // **ESP32 için 1000-2000 µs kullan**
+    servo.attach(pin, 500, 2500); // 500-2500 µs darbe genişliği / pulse width
     if (!servo.attached())
 #elif defined(ESP8266)
-    if (!servo.attach(pin, 500, 2500)) // **ESP8266 için PWM sinyal genişliği arttırıldı (500-2500 µs)**
+    if (!servo.attach(pin, 500, 2500)) // 500-2500 µs darbe genişliği / pulse width
 #else
-    if (!servo.attach(pin)) // **ESP32 için 1000-2000 µs kullan**
+    if (!servo.attach(pin)) // Kütüphanenin varsayılan darbe aralığı / library default pulse range
 #endif
-      Serial.println(String(name) + " Servo attach failed!");
+      Serial.println(String(name) + " servo baglanamadi! / servo attach failed!");
   };
 
   // **Servo motorları bağla / Attach servos**
